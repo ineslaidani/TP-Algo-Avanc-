@@ -150,6 +150,38 @@ st.markdown("""
         border-color: #ff0000 !important;
         box-shadow: 0 0 8px rgba(255,0,0,0.3) !important;
     }
+    
+    /* ✅ Ensure main content text is visible */
+    .main .block-container {
+        color: #262730 !important;
+    }
+    
+    .main .block-container p,
+    .main .block-container h1,
+    .main .block-container h2,
+    .main .block-container h3,
+    .main .block-container h4,
+    .main .block-container h5,
+    .main .block-container h6,
+    .main .block-container div,
+    .main .block-container span,
+    .main .block-container label {
+        color: #262730 !important;
+    }
+    
+    /* ✅ Input fields text color */
+    [data-testid="stTextInput"] input {
+        color: #262730 !important;
+    }
+    
+    [data-testid="stTextInput"] input::placeholder {
+        color: #999 !important;
+    }
+    
+    /* ✅ Selectbox labels */
+    [data-testid="stSelectbox"] label {
+        color: #262730 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 

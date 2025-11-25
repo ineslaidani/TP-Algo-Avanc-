@@ -73,6 +73,35 @@ st.markdown("""
         text-align: center;
         width: 80%;
         margin: auto;
+        color: #333 !important;
+    }
+
+    /* ✅ Ensure main content text is visible */
+    .main .block-container {
+        color: #262730 !important;
+    }
+    
+    .main .block-container p,
+    .main .block-container h1,
+    .main .block-container h2,
+    .main .block-container h3,
+    .main .block-container h4,
+    .main .block-container h5,
+    .main .block-container h6,
+    .main .block-container div,
+    .main .block-container span {
+        color: #262730 !important;
+    }
+    
+    /* ✅ Input fields text color */
+    [data-testid="stTextInput"] input,
+    [data-testid="stTextInput"] label {
+        color: #262730 !important;
+    }
+    
+    /* ✅ Text input placeholder */
+    [data-testid="stTextInput"] input::placeholder {
+        color: #999 !important;
     }
 
     /* ✅ Button Style */

@@ -146,6 +146,45 @@ st.markdown("""
     border-left: 4px solid darkred;
     padding-left: 10px;
     background-color: white;
+    color: #262730 !important;
+}
+
+/* ✅ Ensure main content text is visible */
+.main .block-container {
+    color: #262730 !important;
+}
+
+.main .block-container p,
+.main .block-container h1,
+.main .block-container h2,
+.main .block-container h3,
+.main .block-container h4,
+.main .block-container h5,
+.main .block-container h6,
+.main .block-container div,
+.main .block-container span,
+.main .block-container label {
+    color: #262730 !important;
+}
+
+/* ✅ Input fields text color */
+[data-testid="stTextInput"] input {
+    color: #262730 !important;
+}
+
+[data-testid="stTextInput"] input::placeholder {
+    color: #999 !important;
+}
+
+/* ✅ Checkbox labels */
+[data-testid="stCheckbox"] label {
+    color: #262730 !important;
+}
+
+/* ✅ Selectbox and other inputs */
+[data-testid="stSelectbox"] label,
+[data-baseweb="select"] {
+    color: #262730 !important;
 }
 </style>
 """, unsafe_allow_html=True)
