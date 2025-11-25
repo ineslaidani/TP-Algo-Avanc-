@@ -149,42 +149,44 @@ st.markdown("""
     color: #262730 !important;
 }
 
-/* ✅ Ensure main content text is visible */
+/* ✅ Ensure main content text is visible - but exclude buttons */
 .main .block-container {
-    color: #262730 !important;
+    color: #262730;
 }
 
-.main .block-container p,
-.main .block-container h1,
-.main .block-container h2,
-.main .block-container h3,
-.main .block-container h4,
-.main .block-container h5,
-.main .block-container h6,
-.main .block-container div,
-.main .block-container span,
-.main .block-container label {
+/* Only target plain text, not buttons or styled elements */
+.main .block-container .stMarkdown p:not(.stButton *),
+.main .block-container .stText:not(.stButton *) {
     color: #262730 !important;
 }
 
 /* ✅ Input fields text color */
-[data-testid="stTextInput"] input {
+.main [data-testid="stTextInput"] input {
     color: #262730 !important;
 }
 
-[data-testid="stTextInput"] input::placeholder {
+.main [data-testid="stTextInput"] input::placeholder {
     color: #999 !important;
 }
 
 /* ✅ Checkbox labels */
-[data-testid="stCheckbox"] label {
+.main [data-testid="stCheckbox"] label {
     color: #262730 !important;
 }
 
-/* ✅ Selectbox and other inputs */
-[data-testid="stSelectbox"] label,
-[data-baseweb="select"] {
+/* ✅ Selectbox labels */
+.main [data-testid="stSelectbox"] label {
     color: #262730 !important;
+}
+
+/* ✅ Ensure buttons keep white text */
+.main .stButton>button {
+    color: white !important;
+}
+
+/* ✅ Ensure styled titles keep their colors */
+.section-title, .title {
+    color: darkred !important;
 }
 </style>
 """, unsafe_allow_html=True)
