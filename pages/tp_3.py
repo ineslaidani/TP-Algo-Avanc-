@@ -2,7 +2,6 @@ import streamlit as st
 import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib
-from collections import deque
 
 matplotlib.use("Agg")
 
@@ -10,7 +9,7 @@ matplotlib.use("Agg")
 # CONFIG & STYLE
 # ===========================
 
-st.set_page_config(page_title="TP3 - Arbre 2-3 & Quicksort", layout="wide")
+st.set_page_config(page_title="TP3 - Tri Rapide & Arbre 2-3", layout="wide")
 
 st.markdown("""
 <style>
@@ -106,6 +105,17 @@ st.markdown("""
         border-color: #38761d;
     }
 
+    /* Nouveaux styles pour les listes gauche/droite lors du choix du pivot */
+    .box-left {
+        background-color: #d9ead3;  /* vert clair */
+        border-color: #38761d;
+    }
+
+    .box-right {
+        background-color: #f4cccc;  /* rouge très clair */
+        border-color: #cc0000;
+    }
+
     .step-label {
         font-weight: bold;
         color: darkred;
@@ -143,15 +153,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="tp3-title">TP3 - Arbre 2-3 & Tri Rapide (Quicksort)</div>', unsafe_allow_html=True)
+st.markdown('<div class="tp3-title">TP3 - Tri Rapide (Quicksort) & Arbre 2-3</div>', unsafe_allow_html=True)
 st.markdown("""
 <div class="tp3-subtitle">
-Arbre 2-3 (Node23 / Tree23) → Tableau préfixe (NON trié) → Tableau trié par Quicksort → Nouvel arbre 2-3 (fixe) → Étapes du tri pour compréhension.
+L'utilisateur saisit un tableau → Tri rapide (pivot début / fin / médiane) → Visualisation des étapes + Arbre 2-3 construit nœud par nœud.
 </div>
 """, unsafe_allow_html=True)
 
+
 # ===========================
-# Implémentation Arbre 2-3 correcte
+# Implémentation Arbre 2-3
 # ===========================
 
 class Node23:
@@ -162,6 +173,7 @@ class Node23:
     def is_leaf(self):
         return len(self.children) == 0
 
+
 class Tree23:
     def __init__(self):
         self.root = None
@@ -171,39 +183,39 @@ class Tree23:
             self.root = Node23([key])
             return self.root
 
-        res = self._insert(self.root, key)
-        if res is not None:
-            left, middle_key, right = res
-            self.root = Node23([middle_key], [left, right])
-        return self.root
+        def _insert(node, key):
+            if node.is_leaf():
+                node.keys.append(key)
+                node.keys.sort()
+                if len(node.keys) <= 2:
+                    return None
+                return self._split_node(node)
 
-    def _insert(self, node, key):
-        if node.is_leaf():
-            node.keys.append(key)
-            node.keys.sort()
+            if key < node.keys[0]:
+                idx = 0
+            elif len(node.keys) == 1 or key < node.keys[1]:
+                idx = 1
+            else:
+                idx = 2
+
+            split_result = _insert(node.children[idx], key)
+            if split_result is None:
+                return None
+
+            left, middle_key, right = split_result
+            node.keys.insert(idx, middle_key)
+            node.children[idx] = left
+            node.children.insert(idx + 1, right)
+
             if len(node.keys) <= 2:
                 return None
             return self._split_node(node)
 
-        if key < node.keys[0]:
-            idx = 0
-        elif len(node.keys) == 1 or key < node.keys[1]:
-            idx = 1
-        else:
-            idx = 2
-
-        split_result = self._insert(node.children[idx], key)
-        if split_result is None:
-            return None
-
-        left, middle_key, right = split_result
-        node.keys.insert(idx, middle_key)
-        node.children[idx] = left
-        node.children.insert(idx + 1, right)
-
-        if len(node.keys) <= 2:
-            return None
-        return self._split_node(node)
+        res = _insert(self.root, key)
+        if res is not None:
+            left, middle_key, right = res
+            self.root = Node23([middle_key], [left, right])
+        return self.root
 
     def _split_node(self, node):
         k0, k1, k2 = node.keys
@@ -230,28 +242,12 @@ class Tree23:
         return [[n.keys for n in lvl] for lvl in res]
 
 
-# ===========================
-# Fonctions arbre & tableaux
-# ===========================
-
 def build_23_tree_from_list(values):
     t = Tree23()
     for v in values:
         t.insert(v)
     return t
 
-def preorder_traversal(node, result):
-    if node is None:
-        return
-    for k in node.keys:
-        result.append(k)
-    for child in node.children:
-        preorder_traversal(child, result)
-
-def tree_to_unsorted_array_preorder(tree: Tree23):
-    res = []
-    preorder_traversal(tree.root, res)
-    return res
 
 def format_tree_levels(tree: Tree23):
     lvls = tree.levels()
@@ -265,44 +261,145 @@ def format_tree_levels(tree: Tree23):
 
 
 # ===========================
-# Quicksort avec étapes (sur une COPIE)
+# Choix du pivot (3 cas)
 # ===========================
 
-def quicksort_with_steps(arr):
+PIVOT_LABELS = {
+    "Pivot au début": "start",
+    "Pivot à la fin": "end",
+    "Pivot médiane (début, milieu, fin)": "median"
+}
+DEFAULT_PIVOT_LABEL = "Pivot à la fin"
+reverse_labels = {v: k for k, v in PIVOT_LABELS.items()}
+
+def choose_pivot_index(arr, low, high, mode_key):
     """
-    On travaille sur une copie locale du tableau pour ne PAS toucher
-    au tableau original affiché avant / après tri.
-    Retourne (sorted_array, steps)
+    - start  -> low
+    - end    -> high
+    - median -> élément du milieu (indice (low + high)//2)
     """
-    a = arr[:]  # copie indépendante
+    if mode_key == "start":
+        return low
+    if mode_key == "end":
+        return high
+    if mode_key == "median":
+        return (low + high) // 2
+    return high
+
+
+# ===========================
+# Quicksort avec étapes + valeurs fixées
+# ===========================
+
+def quicksort_with_steps(arr, pivot_mode_key):
+    """
+    Tri rapide sur une COPIE du tableau arr.
+    Retourne (sorted_array, steps) avec :
+      - array : état global du tableau
+      - fixed : valeurs déjà fixées
+    Chaque étape contient aussi low/high pour afficher uniquement la "table" courante.
+    """
+    a = arr[:]
     steps = []
+    fixed_values = []
 
     def add_step(t, **k):
-        s = {"type": t, "array": a.copy()}
+        s = {
+            "type": t,
+            "array": a.copy(),
+            "fixed": fixed_values.copy()
+        }
         s.update(k)
         steps.append(s)
 
     def _qs(low, high, depth):
         if low < high:
+            chosen_idx = choose_pivot_index(a, low, high, pivot_mode_key)
+            chosen_value = a[chosen_idx]
+
+            # Étape : choix du pivot sur le sous-tableau [low..high]
+            add_step(
+                "choose_pivot",
+                low=low,
+                high=high,
+                pivot=chosen_value,
+                pivot_idx=chosen_idx,
+                depth=depth
+            )
+
+            # On met le pivot à la fin (schéma de Lomuto)
+            if chosen_idx != high:
+                a[chosen_idx], a[high] = a[high], a[chosen_idx]
             pivot = a[high]
-            add_step("partition", low=low, high=high, pivot=pivot, depth=depth)
+            pivot_idx = high
+
+            add_step(
+                "partition",
+                low=low,
+                high=high,
+                pivot=pivot,
+                pivot_idx=pivot_idx,
+                depth=depth
+            )
 
             i = low - 1
             for j in range(low, high):
                 if a[j] <= pivot:
                     i += 1
                     a[i], a[j] = a[j], a[i]
-                    add_step("swap", i=i, j=j, low=low, high=high, pivot=pivot, depth=depth)
+                    add_step(
+                        "swap",
+                        i=i,
+                        j=j,
+                        low=low,
+                        high=high,
+                        pivot=pivot,
+                        pivot_idx=high,
+                        depth=depth
+                    )
 
             a[i + 1], a[high] = a[high], a[i + 1]
-            add_step("pivot_fixed", i=i + 1, pivot=pivot, low=low, high=high, depth=depth)
+            pivot_idx = i + 1
+            fixed_values.append(a[pivot_idx])
+            add_step(
+                "pivot_fixed",
+                i=pivot_idx,
+                low=low,
+                high=high,
+                pivot=a[pivot_idx],
+                pivot_idx=pivot_idx,
+                depth=depth
+            )
 
-            p = i + 1
+            p = pivot_idx
             _qs(low, p - 1, depth + 1)
             _qs(p + 1, high, depth + 1)
 
+            # À ce moment-là, le sous-tableau [low..high] est trié → nouvelle "table"
+            add_step(
+                "segment_sorted",
+                low=low,
+                high=high,
+                depth=depth
+            )
+
         elif low == high:
-            add_step("single", index=low, depth=depth)
+            fixed_values.append(a[low])
+            add_step(
+                "single",
+                index=low,
+                low=low,
+                high=high,
+                pivot_idx=None,
+                depth=depth
+            )
+            # Sous-tableau de taille 1 déjà trié → on peut aussi considérer que c'est une table finale
+            add_step(
+                "segment_sorted",
+                low=low,
+                high=high,
+                depth=depth
+            )
 
     if len(a) > 0:
         _qs(0, len(a) - 1, 0)
@@ -310,21 +407,96 @@ def quicksort_with_steps(arr):
     return a, steps
 
 
+# ===========================
+# Affichage d'une étape
+# ===========================
+
 def render_step(step):
-    """Affichage visuel d'une étape de quicksort avec des cases colorées."""
     arr = step["array"]
     t = step["type"]
+    pivot_idx = step.get("pivot_idx", None)
+    low = step.get("low", None)
+    high = step.get("high", None)
 
+    # ----- Cas spécial : choix du pivot -----
+    if t == "choose_pivot":
+        pivot = step["pivot"]
+        low, high = step["low"], step["high"]
+
+        st.markdown(
+            f"<span class='step-label'>Choix du pivot</span> : "
+            f"valeur <b>{pivot}</b> (indice {step['pivot_idx']}) "
+            f"dans le sous-tableau [{low}..{high}].",
+            unsafe_allow_html=True
+        )
+
+        # 1) Sous-tableau courant avec pivot en rouge
+        html_sub = "<div class='array-row'>"
+        for i in range(low, high + 1):
+            v = arr[i]
+            cls = "box box-normal"
+            if i == pivot_idx:
+                cls = "box box-pivot"
+            html_sub += f"<div class='{cls}'>{v}</div>"
+        html_sub += "</div>"
+
+        st.markdown("<div class='small-label'>Sous-tableau courant :</div>", unsafe_allow_html=True)
+        st.markdown(html_sub, unsafe_allow_html=True)
+
+        # 2) Listes gauche/droite en travaillant sur ce sous-tableau uniquement
+        segment = arr[low:high+1]
+        left_elems = [x for x in segment if x < pivot]
+        right_elems = [x for x in segment if x > pivot]
+
+        st.markdown("<div class='small-label'>Éléments &lt; pivot (gauche) :</div>", unsafe_allow_html=True)
+        if left_elems:
+            html_left = "<div class='array-row'>"
+            for v in left_elems:
+                html_left += f"<div class='box box-left'>{v}</div>"
+            html_left += "</div>"
+            st.markdown(html_left, unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='small-label'>Aucun élément strictement plus petit que le pivot.</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='small-label'>Éléments &gt; pivot (droite) :</div>", unsafe_allow_html=True)
+        if right_elems:
+            html_right = "<div class='array-row'>"
+            for v in right_elems:
+                html_right += f"<div class='box box-right'>{v}</div>"
+            html_right += "</div>"
+            st.markdown(html_right, unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='small-label'>Aucun élément strictement plus grand que le pivot.</div>", unsafe_allow_html=True)
+
+        return
+
+    # ----- Segment trié : nouvelle table verte -----
+    if t == "segment_sorted":
+        low, high = step["low"], step["high"]
+        st.markdown(
+            f"<span class='step-label'>Sous-tableau trié</span> sur l'intervalle [{low}..{high}] → nouvelle table :",
+            unsafe_allow_html=True
+        )
+        html_sorted = "<div class='array-row'>"
+        for i in range(low, high + 1):
+            v = arr[i]
+            html_sorted += f"<div class='box box-fixed'>{v}</div>"
+        html_sorted += "</div>"
+        st.markdown(html_sorted, unsafe_allow_html=True)
+        return
+
+    # ----- Autres types d'étapes : partition, swap, pivot_fixed, single -----
     if t == "partition":
         st.markdown(
             f"<span class='step-label'>Début de partition</span> "
-            f"(low={step['low']}, high={step['high']}), pivot = <b>{step['pivot']}</b>.",
+            f"(low={low}, high={high}), pivot = <b>{step['pivot']}</b> "
+            f"(déplacé à la fin du sous-tableau).",
             unsafe_allow_html=True
         )
     elif t == "swap":
         st.markdown(
             f"<span class='step-label'>Échange</span> des éléments aux indices i={step['i']}, j={step['j']} "
-            f"(pivot = <b>{step['pivot']}</b>).",
+            f"(pivot = <b>{step['pivot']}</b> à droite).",
             unsafe_allow_html=True
         )
     elif t == "pivot_fixed":
@@ -334,28 +506,35 @@ def render_step(step):
         )
     elif t == "single":
         st.markdown(
-            f"<span class='step-label'>Sous-tableau de taille 1</span> : élément à l'indice {step['index']} déjà trié.",
+            f"<span class='step-label'>Sous-tableau de taille 1</span> : "
+            f"élément à l'indice {step['index']} déjà trié.",
             unsafe_allow_html=True
         )
 
-    html = "<div class='array-row'>"
-    for i, v in enumerate(arr):
-        cls = "box box-normal"
-        if t == "partition" and i == step.get("high"):
-            cls = "box box-pivot"
-        if t == "swap" and (i == step.get("i") or i == step.get("j")):
-            cls = "box box-swap"
-        if t == "pivot_fixed" and i == step.get("i"):
-            cls = "box box-fixed"
-        if t == "single" and i == step.get("index"):
-            cls = "box box-fixed"
-        html += f"<div class='{cls}'>{v}</div>"
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
+    # On travaille uniquement sur la "table" courante [low..high]
+    if low is not None and high is not None:
+        html = "<div class='array-row'>"
+        for i in range(low, high + 1):
+            v = arr[i]
+            cls = "box box-normal"
+
+            if t in ("partition", "swap") and pivot_idx is not None and i == pivot_idx:
+                cls = "box box-pivot"
+
+            if t == "pivot_fixed" and i == step.get("i"):
+                cls = "box box-fixed"
+
+            if t == "single" and i == step.get("index"):
+                cls = "box box-fixed"
+
+            html += f"<div class='{cls}'>{v}</div>"
+        html += "</div>"
+
+        st.markdown(html, unsafe_allow_html=True)
 
 
 # ===========================
-# Arbre graphique (même style TP2)
+# Arbre graphique
 # ===========================
 
 def build_graph_from_tree(tree: Tree23):
@@ -365,7 +544,7 @@ def build_graph_from_tree(tree: Tree23):
     if not tree.root:
         return G, pos, labels
 
-    def label(node): 
+    def label(node):
         return "[" + ", ".join(str(k) for k in node.keys) + "]"
 
     def layout(node, x, y, dx):
@@ -382,6 +561,7 @@ def build_graph_from_tree(tree: Tree23):
 
     layout(tree.root, 0, 0, 6)
     return G, pos, labels
+
 
 def draw_tree(tree: Tree23, title):
     G, pos, labels = build_graph_from_tree(tree)
@@ -408,10 +588,6 @@ def draw_tree(tree: Tree23, title):
 # Session State
 # ===========================
 
-if "tree_initial" not in st.session_state:
-    st.session_state.tree_initial = None
-if "tree_final" not in st.session_state:
-    st.session_state.tree_final = None
 if "qs_unsorted" not in st.session_state:
     st.session_state.qs_unsorted = []
 if "qs_sorted" not in st.session_state:
@@ -422,104 +598,95 @@ if "qs_index" not in st.session_state:
     st.session_state.qs_index = 0
 if "show_steps" not in st.session_state:
     st.session_state.show_steps = False
+if "pivot_mode" not in st.session_state:
+    st.session_state.pivot_mode = PIVOT_LABELS[DEFAULT_PIVOT_LABEL]
+if "tree_from_sorted" not in st.session_state:
+    st.session_state.tree_from_sorted = None
 
 
 # ===========================
 # 1) Saisie + exécution globale
 # ===========================
 
-st.markdown('<div class="bloc"><div class="step-title">1️⃣ Saisie des valeurs</div>', unsafe_allow_html=True)
+st.markdown('<div class="bloc"><div class="step-title">1️⃣ Saisie du tableau</div>', unsafe_allow_html=True)
 
 user_input = st.text_input(
-    "Entrez les valeurs (ex: 8,3,1,6,4,10,14)",
+    "Entrez les valeurs du tableau (ex: 8,3,1,6,4,10,14)",
     value="8,3,1,6,4,10,14"
 )
 
+current_label = reverse_labels.get(st.session_state.pivot_mode, DEFAULT_PIVOT_LABEL)
+pivot_label_options = list(PIVOT_LABELS.keys())
 
-if st.button("Lancer TP3"):
+pivot_label = st.selectbox(
+    "Méthode de sélection du pivot pour le tri rapide :",
+    pivot_label_options,
+    index=pivot_label_options.index(current_label)
+)
+
+if st.button("Lancer le tri rapide"):
     try:
         values = [int(x.strip()) for x in user_input.split(",") if x.strip()]
         if not values:
             st.error("Veuillez entrer au moins une valeur.")
         else:
-            # Arbre initial
-            tree_initial = build_23_tree_from_list(values)
-            st.session_state.tree_initial = tree_initial
+            st.session_state.pivot_mode = PIVOT_LABELS[pivot_label]
 
-            # Tableau NON trié (préfixe)
-            unsorted_arr = tree_to_unsorted_array_preorder(tree_initial)
-            st.session_state.qs_unsorted = unsorted_arr
+            st.session_state.qs_unsorted = values
 
-            # Tri rapide (sur copie) + étapes
-            sorted_arr, steps = quicksort_with_steps(unsorted_arr)
+            sorted_arr, steps = quicksort_with_steps(values, st.session_state.pivot_mode)
             st.session_state.qs_sorted = sorted_arr
             st.session_state.qs_steps = steps
             st.session_state.qs_index = 0
-            st.session_state.show_steps = False  # on cache les étapes tant que le bouton n'est pas cliqué
+            st.session_state.show_steps = False
 
-            # Nouvel arbre 2-3 construit À PARTIR du tableau trié (fixe)
-            tree_final = build_23_tree_from_list(sorted_arr)
-            st.session_state.tree_final = tree_final
+            st.session_state.tree_from_sorted = build_23_tree_from_list(sorted_arr)
 
-            st.success("TP3 exécuté : arbre initial, tableau avant/après tri et nouvel arbre générés.")
+            st.success(
+                f"Tri rapide exécuté avec {pivot_label}. "
+                "Tableau trié et arbre 2-3 final construits."
+            )
     except ValueError:
         st.error("Veuillez entrer uniquement des entiers valides.")
+
 st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ===========================
-# 2) Arbre initial
-# ===========================
-
-if st.session_state.tree_initial:
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown('<div class="bloc"><div class="step-title">2️⃣ Arbre 2-3 initial</div>', unsafe_allow_html=True)
-        for line in format_tree_levels(st.session_state.tree_initial):
-            st.code(line, language="text")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col2:
-        fig1 = draw_tree(st.session_state.tree_initial, "Arbre 2-3 initial")
-        st.pyplot(fig1)
-
-
-# ===========================
-# 3) Tableau avant / après tri (fixes)
+# 2) Tableau avant / après tri
 # ===========================
 
 if st.session_state.qs_unsorted:
-    st.markdown('<div class="bloc"><div class="step-title">3️⃣ Tableau issu du parcours préfixe (NON trié)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="bloc"><div class="step-title">2️⃣ Tableau initial (avant tri)</div>', unsafe_allow_html=True)
     st.markdown(f"<span class='code-like'>{st.session_state.qs_unsorted}</span>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 if st.session_state.qs_sorted:
-    st.markdown('<div class="bloc"><div class="step-title">4️⃣ Tableau après tri rapide (Quicksort)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="bloc"><div class="step-title">3️⃣ Tableau après tri rapide</div>', unsafe_allow_html=True)
     st.markdown(f"<span class='code-like'>{st.session_state.qs_sorted}</span>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ===========================
-# 4) Nouvel arbre 2-3 après tri (fixe)
+# 3) Arbre 2-3 final (tableau trié)
 # ===========================
 
-if st.session_state.tree_final:
+if st.session_state.tree_from_sorted:
     col3, col4 = st.columns(2)
 
     with col3:
-        st.markdown('<div class="bloc"><div class="step-title">5️⃣ Nouvel arbre 2-3 après tri + réinsertion</div>', unsafe_allow_html=True)
-        for line in format_tree_levels(st.session_state.tree_final):
+        st.markdown('<div class="bloc"><div class="step-title">4️⃣ Arbre 2-3 final (tableau trié)</div>', unsafe_allow_html=True)
+        for line in format_tree_levels(st.session_state.tree_from_sorted):
             st.code(line, language="text")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col4:
-        fig2 = draw_tree(st.session_state.tree_final, "Nouvel arbre 2-3 (après tri)")
+        fig2 = draw_tree(st.session_state.tree_from_sorted, "Arbre 2-3 (à partir du tableau trié)")
         st.pyplot(fig2)
 
 
 # ===========================
-# 5) Bouton pour afficher les étapes (sans toucher aux arbres)
+# 4) Étapes détaillées + arbre nœud par nœud
 # ===========================
 
 if st.session_state.qs_steps:
@@ -531,7 +698,7 @@ if st.session_state.qs_steps:
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="step-title">6️⃣ Étapes détaillées du tri rapide</div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-title">5️⃣ Étapes détaillées du tri rapide + Arbre 2-3 (nœud par nœud)</div>', unsafe_allow_html=True)
 
         steps = st.session_state.qs_steps
         idx = st.session_state.qs_index
@@ -539,26 +706,47 @@ if st.session_state.qs_steps:
         col_prev, col_info, col_next = st.columns([1, 3, 1])
 
         with col_prev:
-            if st.button("◀️ Précédent", disabled=(idx <= 0)):
+            if st.button("◀ Précédent", disabled=(idx <= 0)):
                 st.session_state.qs_index = max(0, idx - 1)
                 st.rerun()
 
         with col_next:
-            if st.button("Suivant ▶️", disabled=(idx >= len(steps) - 1)):
+            if st.button("Suivant ▶", disabled=(idx >= len(steps) - 1)):
                 st.session_state.qs_index = min(len(steps) - 1, idx + 1)
                 st.rerun()
 
         with col_info:
+            label_for_mode = reverse_labels.get(st.session_state.pivot_mode, DEFAULT_PIVOT_LABEL)
             st.markdown(
-                f"<div style='text-align:center;' class='small-label'>Étape {idx + 1} / {len(steps)}</div>",
+                f"<div style='text-align:center;' class='small-label'>Étape {idx + 1} / {len(steps)} "
+                f"({label_for_mode})</div>",
                 unsafe_allow_html=True
             )
 
         current_step = steps[idx]
-        render_step(current_step)
+
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            render_step(current_step)
+
+        with col_b:
+            fixed_vals = current_step["fixed"]
+            if fixed_vals:
+                sorted_fixed = sorted(fixed_vals)
+                tree_step = build_23_tree_from_list(sorted_fixed)
+                fig_step = draw_tree(tree_step, "Arbre 2-3 (valeurs fixées triées)")
+                st.pyplot(fig_step)
+            else:
+                fig_empty, ax_empty = plt.subplots(figsize=(8, 5))
+                ax_empty.text(0.5, 0.5, "Aucun nœud encore inséré dans l'arbre",
+                              ha='center', va='center')
+                ax_empty.axis('off')
+                st.pyplot(fig_empty)
 
         st.markdown(
-            f"<div class='small-label'>Le tableau trié final reste : <b>{st.session_state.qs_sorted}</b> (fixe, indépendant de la navigation).</div>",
+            "<div class='small-label'>L'arbre affiché pour chaque étape est construit à partir "
+            "des valeurs déjà fixées, rangées dans l'ordre trié.</div>",
             unsafe_allow_html=True
         )
 
