@@ -142,8 +142,8 @@ st.markdown('<div class="group-info">', unsafe_allow_html=True)
 st.markdown('<div class="group-title">Group 4</div>', unsafe_allow_html=True)
 
 members = [
-    "Bengrab Meriem", "Belhadj Aya", "Mehdid Malek",
-    "Kalafat Fadwa", "Ziane Hiba", "Laidani Inès"
+    "Bengrab Meriem", "Belhadj Aya", "Mehdid Malak",
+    "Kalafat Fadoua", "Ziane Hiba", "Laidani Inès"
 ]
 
 # قسم الأسماء إلى صفين كل صف يحتوي 3 أسماء
@@ -169,7 +169,7 @@ tp_buttons = [
     ("TP2", "pages/tp_2.py"),
     ("TP3", "pages/tp_3.py"),
     ("TP4","pages/tp_41.py"),
-    ("TP5", "pages/tp4.py"),
+    ("TP5", "pages/tp_4.py"),
     ("TP6", None),
 ]
 
