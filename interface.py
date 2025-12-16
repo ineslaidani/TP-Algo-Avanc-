@@ -168,9 +168,8 @@ tp_buttons = [
     ("TP1", "pages/tp1.py"),
     ("TP2", "pages/tp_2.py"),
     ("TP3", "pages/tp_3.py"),
-    ("TP4","pages/tp_41.py"),
-    ("TP5", "pages/tp_4.py"),
-    ("TP6", None),
+    ("TP4","pages/tp_4.py"),
+    
 ]
 
 # ✅ صفين متمركزين (3 أزرار في كل صف)
