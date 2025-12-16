@@ -285,12 +285,6 @@ streamlit run interface.py --server.port 8501 --server.address 0.0.0.0
 
 ---
 
-## 📄 Licence
-
-Ce projet est développé dans le cadre d'un travail pratique universitaire.
-
----
-
 
 ## 🔗 Liens utiles
 
@@ -299,5 +293,5 @@ Ce projet est développé dans le cadre d'un travail pratique universitaire.
 
 ---
 
-**Développé avec ❤️ par le Groupe 4**
+**Développé  par le Groupe 4**
 
