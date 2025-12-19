@@ -183,7 +183,7 @@ L'application s'ouvrira automatiquement dans votre navigateur à l'adresse :
 1. **Page principale** : Affiche les informations du groupe et les boutons d'accès aux TPs
 2. **TP1** : Arbres et Graphes
 3. **TP2** : Arbre 2-3
-4. **TP3** : Arbre 2-3 & Quicksort
+4. **TP3** : Quicksort
 5. **TP4** : Bellman-Ford & Coloration (Matula)
 
 ### Guide rapide par TP
