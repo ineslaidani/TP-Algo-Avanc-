@@ -59,21 +59,23 @@ Implémentation complète de l'arbre 2-3 (B-arbre d'ordre 3) avec toutes les op�
 
 ---
 
-### 🔄 TP3 - Arbre 2-3 & Tri Rapide (Quicksort)
+### 🔄 TP3 - Visualisation du Tri Rapide (Quicksort)
 
-Combinaison de deux algorithmes fondamentaux :
+Cette application propose une immersion visuelle dans le fonctionnement de l'algorithme Quicksort, en mettant l'accent sur sa structure récursive sous forme d'arbre.
+Workflow :
+- Saisie Dynamique : L'utilisateur entre une liste d'entiers et choisit la stratégie du pivot.
+- Arbre de Partition Récursive : Génération d'un arbre visuel où chaque nœud représente un appel récursif sur un sous-tableau spécifique.
+- Navigation Interactive : Parcours pas à pas de la construction de l'arbre, permettant de voir comment le pivot divise les données.
+- Finalisation : Affichage du tableau trié final une fois que toutes les partitions récursives sont complétées.
 
-**Workflow :**
-1. **Construction d'un arbre 2-3** à partir de valeurs saisies
-2. **Parcours préfixe** : Extraction des valeurs dans un tableau non trié
-3. **Tri rapide (Quicksort)** : Tri du tableau avec visualisation étape par étape
-4. **Reconstruction** : Création d'un nouvel arbre 2-3 à partir du tableau trié
+Fonctionnalités Clés :
+Sélection du Pivot : Choix personnalisable de la position du pivot (début, fin ou médiane).
 
-**Fonctionnalités Quicksort :**
-- Visualisation interactive des étapes de partition
-- Navigation étape par étape (Précédent/Suivant)
-- Mise en évidence des éléments pivot, échangés et fixés
-- Affichage des sous-tableaux à chaque récursion
+Mise en Évidence Visuelle :
+- Coloration du pivot en orange dans le tableau courant.
+- Surbrillance du nœud actif dans l'arbre de récursion pour suivre l'exécution.
+- Layout Intelligent : Disposition de l'arbre optimisée pour éviter le chevauchement des nœuds, garantissant une clarté maximale même pour les tableaux larges.
+- Contrôles de Navigation : Boutons "Précédent" et "Suivant" pour explorer l'historique complet de la récursion.
 
 ---
 
